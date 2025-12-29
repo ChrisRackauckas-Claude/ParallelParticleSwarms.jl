@@ -1,5 +1,4 @@
-@kernel function _update_particle_states!(gpu_particles, lb, ub, gbest, w; c1 = 1.4962f0,
-        c2 = 1.4962f0)
+@kernel function ode_update_particle_states!(gpu_particles, lb, ub, gbest, w, c1, c2)
     i = @index(Global, Linear)
     if i <= length(gpu_particles)
         @inbounds particle = gpu_particles[i]
@@ -24,7 +23,7 @@
     end
 end
 
-@kernel function _update_particle_costs!(losses, gpu_particles)
+@kernel function ode_update_particle_costs!(losses, gpu_particles)
     i = @index(Global, Linear)
     if i <= length(losses)
         @inbounds particle = gpu_particles[i]
@@ -55,8 +54,8 @@ function parameter_estim_ode!(prob::ODEProblem, cache,
         maxiters = 100, kwargs...)
     (losses, gpu_particles, gpu_data, gbest) = cache
     backend = get_backend(gpu_particles)
-    update_states! = ParallelParticleSwarms._update_particle_states!(backend)
-    update_costs! = ParallelParticleSwarms._update_particle_costs!(backend)
+    update_states! = ParallelParticleSwarms.ode_update_particle_states!(backend)
+    update_costs! = ParallelParticleSwarms.ode_update_particle_costs!(backend)
 
     improb = make_prob_compatible(prob)
 
@@ -65,7 +64,9 @@ function parameter_estim_ode!(prob::ODEProblem, cache,
             lb,
             ub,
             gbest,
-            w;
+            w,
+            1.4962f0,
+            1.4962f0;
             ndrange = length(gpu_particles))
 
         KernelAbstractions.synchronize(backend)
@@ -109,8 +110,8 @@ function parameter_estim_ode!(prob::ODEProblem, cache,
         maxiters = 100, kwargs...)
     (losses, gpu_particles, gpu_data, gbest) = cache
     backend = get_backend(gpu_particles)
-    update_states! = ParallelParticleSwarms._update_particle_states!(backend)
-    update_costs! = ParallelParticleSwarms._update_particle_costs!(backend)
+    update_states! = ParallelParticleSwarms.ode_update_particle_states!(backend)
+    update_costs! = ParallelParticleSwarms.ode_update_particle_costs!(backend)
 
     improb = make_prob_compatible(prob)
 
@@ -119,7 +120,9 @@ function parameter_estim_ode!(prob::ODEProblem, cache,
             lb,
             ub,
             gbest,
-            w;
+            w,
+            1.4962f0,
+            1.4962f0;
             ndrange = length(gpu_particles))
 
         KernelAbstractions.synchronize(backend)
